@@ -10,6 +10,7 @@ def solve(instance):
     location_count, location_data = len(instance), instance
     
     model = gurobipy.Model()
+    model.setParam('OutputFlag', 0)
     
     # Variáveis de decisão
     ## chosen_route[i, j] = 1 se a rota escolhida vai de i para j, 0 caso contrário
@@ -78,8 +79,14 @@ def solve(instance):
     ## Garante que o tempo de chegada em cada localidade
     ##seja não negativo e que o tempo de chegada na primeira localidade seja 0 (início da rota) 
     model.addConstr(arrival_time[0] == 0)
-    model.addConstrs(arrival_time[i] > 0 for i in range(1, location_count))
+    model.addConstrs(arrival_time[i] >= 0 for i in range(1, location_count))
 
     model.optimize()
 
-    return model.objVal
+    routes = []
+
+    for i in range(location_count):
+        for j in range(location_count):
+            if chosen_route[i, j].Xn > 0.5:
+                routes.append((i, j))
+    return model.ObjVal, routes, [arrival_time[i].Xn for i in range(location_count)]
