@@ -20,9 +20,6 @@ def read_instances():
 
                 locations_data.append((*coords, service_time, max_time))
             
-            # Adicionando a localidade de retorno ao final da rota
-            locations_data.append(locations_data[0])
-                
             instances.append(locations_data)
     
     return instances

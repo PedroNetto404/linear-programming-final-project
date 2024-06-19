@@ -6,87 +6,71 @@ M = 10 ** 6
 def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-def solve(instance):
-    location_count, location_data = len(instance), instance
+def solve(location_data):
+    location_data.append(location_data[0])
+    location_count = len(location_data)
     
     model = gurobipy.Model()
-    model.setParam('OutputFlag', 0)
-    
+    model.setParam('TimeLimit', 10)
+
     # Variáveis de decisão
-    ## chosen_route[i, j] = 1 se a rota escolhida vai de i para j, 0 caso contrário
     chosen_route = model.addVars(location_count, location_count, vtype=gurobipy.GRB.BINARY, name='chosen_route')
-    ## arrival_time[i] = tempo de chegada na localidade i
-    arrival_time = model.addVars(location_count, name='arrival_time')
-    ## delay_time[i] = tempo de atraso na localidade i
-    delay_time = model.addVars(location_count, name='delay_time')
+    arrival_time = model.addVars(location_count, vtype=gurobipy.GRB.CONTINUOUS, name='arrival_time', lb=0)
+    delay_time = model.addVars(location_count, vtype=gurobipy.GRB.CONTINUOUS, name='delay_time', lb=0)
 
     # Função objetivo
-    ## Minimizando o tempo de atraso total fazemos com que o valor da multa seja minimizado    
     model.setObjective(
-        gurobipy.quicksum(delay_time[i] for i in range(location_count)),
+        gurobipy.quicksum(delay_time[i] for i in range(1, location_count - 1)),
         sense = gurobipy.GRB.MINIMIZE
     )
 
     # Restrições
-    ## Cada localidade deve ser visitada exatamente uma vez
-    ### Devemos sair de cada localidade i uma única vez 
     model.addConstrs(
-        gurobipy.quicksum(chosen_route[i, j] for j in range(location_count)) == 1
-        for i in range(location_count)
+        gurobipy.quicksum(chosen_route[i, j] for j in range(1, location_count) if i != j) == 1
+        for i in range(0, location_count - 1)
     )
-    ### Devemos chegar em cada localidade j uma única vez
     model.addConstrs(
-        gurobipy.quicksum(chosen_route[j, i] for j in range(location_count)) == 1
-        for i in range(location_count)
+        gurobipy.quicksum(chosen_route[i, j] for i in range(location_count - 1) if i != j) == 1
+        for j in range(1, location_count)
     )
 
-    ## Garante que não haja sub-rotas
-    for i in range(location_count):
-        for j in range(location_count): 
+    for i in range(0, location_count - 1):
+        for j in range(1, location_count): 
             if i == j: 
                 continue
 
-            placeI = location_data[i]
-            placeICoord = (placeI[0], placeI[1])
-            placeIServiceTime = placeI[3]
+            location_i = location_data[i]
+            location_i_coords = (location_i[0], location_i[1])
+            location_i_service_time = location_i[2]
 
-            placeJ = location_data[j]
-            placeJCoord = (placeJ[0], placeJ[1])
+            location_j = location_data[j]
+            location_j_coords = (location_j[0], location_j[1])
+
+            time_between_locations = get_distance(location_i_coords, location_j_coords)
 
             model.addConstr(
                 arrival_time[j] >= 
-                    arrival_time[i] + 
-                    placeIServiceTime + 
-                    get_distance(placeICoord, placeJCoord) + 
-                    M * (1 - chosen_route[i, j])
+                    arrival_time[i] +
+                    time_between_locations +
+                    location_i_service_time -
+                    M * (1 - chosen_route[i,j])
             )
-
-    ## Garante que o tempo de chegada em cada localidade seja menor ou igual ao tempo máximo permitido,
-    ##considerando o tempo de atraso
-    for i in range(location_count):
-        maxTimeToLocation = location_data[i][2]
-
-        model.addConstr(
-            arrival_time[i] <= maxTimeToLocation + delay_time[i]
-        )
-
-    ## Garante que o tempo de atraso não seja negativo
+            
     model.addConstrs(
-        delay_time[i] >= 0
-        for i in range(location_count)
+        delay_time[i] >= arrival_time[i] - location_data[i][3]
+        for i in range(1, location_count - 1)
     )
+            
+    model.optimize()  
 
-    ## Garante que o tempo de chegada em cada localidade
-    ##seja não negativo e que o tempo de chegada na primeira localidade seja 0 (início da rota) 
-    model.addConstr(arrival_time[0] == 0)
-    model.addConstrs(arrival_time[i] >= 0 for i in range(1, location_count))
-
-    model.optimize()
+    if model.status != gurobipy.GRB.OPTIMAL:
+        return None, None, None
 
     routes = []
 
     for i in range(location_count):
         for j in range(location_count):
-            if chosen_route[i, j].Xn > 0.5:
+            if chosen_route[i, j].X > 0.5:
                 routes.append((i, j))
-    return model.ObjVal, routes, [arrival_time[i].Xn for i in range(location_count)]
+
+    return model.ObjVal, routes, [arrival_time[i].X for i in range(location_count)]

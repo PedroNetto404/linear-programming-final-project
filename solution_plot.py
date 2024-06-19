@@ -9,4 +9,11 @@ def plot_solution(instance, routes):
     G.add_edges_from(routes)
     
     nx.draw(G, pos, with_labels=True, node_size=500, node_color='lightblue', font_size=10, font_weight='bold', arrows=True)
+    
+    plt.axhline(0, color='black', lw=1)
+
     plt.show()
+    
+        
+    
+    
