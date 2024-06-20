@@ -20,6 +20,7 @@ def read_instances():
 
                 locations_data.append((*coords, service_time, max_time))
             
-            instances.append(locations_data)
+            instance_name = file.name.split("/")[-1].split(".")[0].split("\\")[-1]
+            instances.append((instance_name, locations_data))
     
     return instances

@@ -61,10 +61,10 @@ def solve(location_data):
         for i in range(1, location_count - 1)
     )
             
-    model.optimize()  
+    model.optimize()
 
     if model.status != gurobipy.GRB.OPTIMAL:
-        return None, None, None
+        return None
 
     routes = []
 
@@ -73,4 +73,23 @@ def solve(location_data):
             if chosen_route[i, j].X > 0.5:
                 routes.append((i, j))
 
-    return model.ObjVal, routes, [arrival_time[i].X for i in range(location_count)]
+
+    # return model.ObjVal, routes, [arrival_time[i].X for i in range(location_count)]
+    return (
+        # Limite superior da função objetivo
+        model.ObjVal,
+        # Limite inferior da função objetivo
+        model.ObjBound,
+        # Tempo de execução
+        model.Runtime,
+        # Gap Relativo
+        model.MIPGap,
+        # Número de nós
+        model.NodeCount,
+        # Rotas escolhidas
+        routes,
+        # Tempos de chegada em cada local
+        [arrival_time[i].X for i in range(location_count)],
+        # Tempo de atraso em cada local
+        [delay_time[i].X for i in range(location_count)]
+    )
