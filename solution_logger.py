@@ -25,7 +25,7 @@ runtime: {runtime}
 relative_gap: {relative_gap}
 node_count: {node_count}
 routes: {' '.join(map(str, routes))}
-arrival_times: {' '.join(map(str, arrival_times))}
+arrival_times: {' '.join(map(str, sorted(arrival_times)))}
 delay_times: {' '.join(map(str, delay_times))}
 """
     
