@@ -61,20 +61,25 @@ def solve(location_data):
                 arrival_time[j] >= 
                     arrival_time[i] +
                     time_between_locations +
-                    location_i_service_time -
+                    location_i_service_time 
                     ## Usamos uma constante grande para garantir que a restrição seja satisfeita
                     ##quando a rota não for escolhida, isto é, chosen_route[i, j] == 0
-                    M * (1 - chosen_route[i,j]) 
+                    - M * (1 - chosen_route[i,j]) 
             )
         
     ## Garantir que o tempo de atraso em cada local seja maior ou igual ao tempo de chegada menos o tempo máximo permitido
     for i in range(1, location_count - 1):
-        max_time_to_location = location_data[i][3]
+        location_i = location_data[i]
+        deadline = location_i[3]
+        expected_delay_time = arrival_time[i] - deadline
         
-        model.addConstr(
-            delay_time[i] >= arrival_time[i] - max_time_to_location
-        )
-            
+        # Definindo a variável auxiliar para o tempo de atraso esperado
+        delay_aux = model.addVar(vtype=gurobipy.GRB.CONTINUOUS, name=f'delay_aux_{i}', lb=0)
+        model.addConstr(delay_aux == expected_delay_time)
+        
+        # Garantindo que o tempo de atraso seja maior ou igual ao tempo de atraso esperado ou 0
+        model.addConstr(delay_time[i] >= delay_aux)
+             
     model.optimize()
 
     if model.status != gurobipy.GRB.OPTIMAL:

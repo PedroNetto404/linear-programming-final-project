@@ -2,7 +2,6 @@ import instance_reader
 import problem_model
 import multiprocessing
 import solution_logger
-import solution_plot
 
 if __name__ == "__main__":
     instances = instance_reader.read_instances()

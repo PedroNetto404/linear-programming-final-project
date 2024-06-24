@@ -1,4 +1,5 @@
 import os
+import datetime
 
 def log_solution(instance_name, solution):
     if solution is None:
@@ -18,15 +19,16 @@ def log_solution(instance_name, solution):
     ) = solution
         
     log_file_content = f"""
+created_at: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 instance_name: {instance_name}
-objective_upper_bound: {objective_upper_bound}
-objective_lower_bound: {objective_lower_bound}
+objective_upper_bound: {f"{objective_upper_bound:.2f}"}
+objective_lower_bound: {f"{objective_lower_bound:.2f}"}
 runtime: {runtime}
-relative_gap: {relative_gap}
+relative_gap: {f"{relative_gap:.2f}"}
 node_count: {node_count}
 routes: {' '.join(map(str, routes))}
-arrival_times: {' '.join(map(str, sorted(arrival_times)))}
-delay_times: {' '.join(map(str, delay_times))}
+arrival_times: {' '.join(map(lambda x: f"{x:.2f}", arrival_times))}
+delay_times: {' '.join(map(lambda x: f"{x:.2f}", delay_times))}
 """
     
     if not os.path.exists("./outputs"):
